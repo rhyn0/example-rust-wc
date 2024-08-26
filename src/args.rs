@@ -20,11 +20,6 @@ pub struct Cli {
 #[group(required = false, multiple = true)]
 #[allow(clippy::struct_excessive_bools)]
 pub struct OutputOptions {
-    /// Write the length of the line containing the most bytes (default) or characters (when -m is provided) to standard output.
-    /// When more than one file argument is specified, the longest input line of all files is reported as the value of the final “total”.
-    #[arg(short = 'L')]
-    pub longest_line: bool,
-
     ///  The number of bytes in each input file is written to the standard output.
     #[arg(short = 'c')]
     pub byte_count: bool,
@@ -47,7 +42,6 @@ pub struct OutputOptions {
 impl Default for OutputOptions {
     fn default() -> Self {
         Self {
-            longest_line: false,
             byte_count: true,
             line_count: true,
             word_count: true,
@@ -61,7 +55,6 @@ impl Cli {
         if self.output.byte_count
             || self.output.line_count
             || self.output.word_count
-            || self.output.longest_line
             || self.output.character_count
         {
             if self.output.character_count && self.output.byte_count {
@@ -95,7 +88,6 @@ mod tests {
         assert!(cli.is_ok());
         let result = cli.unwrap();
         assert_eq!(result.debug, 0);
-        assert_eq!(result.output.longest_line, false);
         assert_eq!(result.output.byte_count, false);
         assert_eq!(result.output.word_count, false);
         assert_eq!(result.output.byte_count, false);
@@ -106,7 +98,6 @@ mod tests {
         assert!(cli.is_ok());
         let result = cli.unwrap();
         let output_options = result.get_output_settings();
-        assert_eq!(output_options.longest_line, false);
         assert_eq!(output_options.line_count, true);
         assert_eq!(output_options.word_count, true);
         assert_eq!(output_options.byte_count, true);

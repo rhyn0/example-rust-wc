@@ -45,6 +45,14 @@ fn main() {
     let cli = Cli::parse();
     let output = cli.get_output_settings();
     let mut results = Vec::with_capacity(cli.files.len());
+    if cli.files.is_empty() {
+        // use stdin
+        if let Ok(result) = get_counts("-".to_string()) {
+            results.push(result);
+        } else {
+            eprintln!("Failed to read from stdin");
+        }
+    }
     for file in cli.files {
         if let Ok(result) = get_counts(file.clone()) {
             results.push(result);

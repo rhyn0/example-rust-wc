@@ -1,6 +1,6 @@
 use core::str;
 use std::fs::File;
-use std::io::{BufRead, BufReader, Result};
+use std::io::{self, BufRead, BufReader, Result};
 use std::ops;
 
 fn open_file(file_name: &str) -> Result<File> {
@@ -27,28 +27,42 @@ fn get_character_count(buffer: &str) -> usize {
     buffer.char_indices().count()
 }
 
-pub fn get_counts(file_name: String) -> Result<ResultOutput> {
-    let file = open_file(&file_name)?;
-    let mut result = ResultOutput::new(file_name);
-    result.byte_count = usize::try_from(file.metadata()?.len()).unwrap();
-    let mut reader = BufReader::new(file);
+fn use_reader<R>(reader: &mut BufReader<R>, result: &mut ResultOutput)
+where
+    R: Sized + std::io::Read,
+{
     let mut in_word = false;
     let mut buffer = String::new();
     loop {
         match reader.read_line(&mut buffer) {
             Ok(0) => break,
-            Ok(_) => {
+            Ok(x) => {
                 result.line_count += 1;
                 result.character_count += get_character_count(&buffer);
                 let (word_count, now_in_word) = get_word_count_in_buffer(&buffer, in_word);
                 result.word_count += word_count;
+                result.byte_count += x;
                 in_word = now_in_word;
                 buffer.clear();
             }
             Err(e) => panic!("{e}"),
         }
     }
-    Ok(result)
+}
+pub fn get_counts(file_name: String) -> Result<ResultOutput> {
+    if file_name == "-" {
+        let stdin = io::stdin();
+        let mut reader = BufReader::new(stdin);
+        let mut result = ResultOutput::new(String::new());
+        use_reader(&mut reader, &mut result);
+        Ok(result)
+    } else {
+        let file = open_file(&file_name)?;
+        let mut result = ResultOutput::new(file_name);
+        let mut reader = BufReader::new(file);
+        use_reader(&mut reader, &mut result);
+        Ok(result)
+    }
 }
 
 #[derive(Debug, Clone, Default)]
