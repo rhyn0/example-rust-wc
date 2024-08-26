@@ -27,7 +27,7 @@ pub struct OutputOptions {
 
     ///  The number of bytes in each input file is written to the standard output.
     #[arg(short = 'c')]
-    pub character_count: bool,
+    pub byte_count: bool,
 
     ///  The number of lines in each input file is written to the standard output.
     #[arg(short = 'l')]
@@ -41,32 +41,33 @@ pub struct OutputOptions {
     /// If the current locale does not support multibyte characters, this is equivalent to the -c option.
     /// This will cancel out any prior usage of the -c option.
     #[arg(short = 'm')]
-    pub multibyte_count: bool,
+    pub character_count: bool,
 }
 
 impl Default for OutputOptions {
     fn default() -> Self {
         Self {
             longest_line: false,
-            character_count: true,
+            byte_count: true,
             line_count: true,
             word_count: true,
-            multibyte_count: false,
+            character_count: false,
         }
     }
 }
 
 impl Cli {
     pub fn get_output_settings(&self) -> OutputOptions {
-        if self.output.character_count
+        if self.output.byte_count
             || self.output.line_count
             || self.output.word_count
             || self.output.longest_line
+            || self.output.character_count
         {
-            if self.output.multibyte_count && self.output.character_count {
+            if self.output.character_count && self.output.byte_count {
                 // if -m flag is specified, ignore character count flag
                 OutputOptions {
-                    character_count: false,
+                    byte_count: false,
                     ..self.output
                 }
             } else {
@@ -80,7 +81,7 @@ impl Cli {
 
 #[cfg(test)]
 mod tests {
-    use clap::{CommandFactory, Error};
+    use clap::CommandFactory;
 
     use super::*;
 
@@ -95,9 +96,9 @@ mod tests {
         let result = cli.unwrap();
         assert_eq!(result.debug, 0);
         assert_eq!(result.output.longest_line, false);
-        assert_eq!(result.output.character_count, false);
+        assert_eq!(result.output.byte_count, false);
         assert_eq!(result.output.word_count, false);
-        assert_eq!(result.output.character_count, false);
+        assert_eq!(result.output.byte_count, false);
     }
     #[test]
     fn test_default_output_options() {
@@ -108,7 +109,7 @@ mod tests {
         assert_eq!(output_options.longest_line, false);
         assert_eq!(output_options.line_count, true);
         assert_eq!(output_options.word_count, true);
-        assert_eq!(output_options.character_count, true);
+        assert_eq!(output_options.byte_count, true);
     }
     #[test]
     fn test_byte_group() {
@@ -116,7 +117,7 @@ mod tests {
         assert!(cli.is_ok());
         let result = cli.unwrap();
         let output_options = result.get_output_settings();
-        assert_eq!(output_options.character_count, false);
-        assert_eq!(output_options.multibyte_count, true);
+        assert_eq!(output_options.byte_count, false);
+        assert_eq!(output_options.character_count, true);
     }
 }

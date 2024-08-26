@@ -1,29 +1,49 @@
 mod args;
 mod count;
-use std::process::exit;
+use std::fmt::Write;
 
 use args::{Cli, OutputOptions};
 use clap::Parser;
 use count::{get_counts, ResultOutput};
 
-fn print_results(arr: &[ResultOutput], _options: OutputOptions) {
-    // dbg!(options);
+fn write_part(buffer: &mut String, value: usize) {
+    let spacing = 8;
+    if let Err(e) = write!(buffer, "{value:>spacing$}") {
+        panic!("{e}")
+    }
+}
+fn build_line(result: &ResultOutput, options: OutputOptions) -> String {
+    let mut line = String::new();
+    if options.line_count {
+        write_part(&mut line, result.line_count);
+    };
+    if options.word_count {
+        write_part(&mut line, result.word_count);
+    };
+    if options.byte_count {
+        write_part(&mut line, result.byte_count);
+    };
+    if options.character_count {
+        write_part(&mut line, result.character_count);
+    }
+    line.push_str(&format!(" {}", result.name));
+    line.push('\n');
+    line
+}
+fn print_results(arr: &[ResultOutput], options: OutputOptions) {
     let mut total = ResultOutput::new("total".to_string());
-    for result in arr {
-        total += result.clone();
-        print!("{result}");
+    let output = arr.iter().map(|r| (r.to_owned(), build_line(r, options)));
+    for (result, line) in output {
+        total += result;
+        print!("{line}");
     }
     if arr.len() > 1 {
-        print!("{total}");
+        print!("{}", build_line(&total, options));
     }
 }
 fn main() {
     let cli = Cli::parse();
     let output = cli.get_output_settings();
-    if !output.character_count {
-        eprintln!("Failed to activate the only working flag. Exiting...");
-        exit(1);
-    }
     let mut results = Vec::with_capacity(cli.files.len());
     for file in cli.files {
         if let Ok(result) = get_counts(file.clone()) {
